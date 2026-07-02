@@ -1,0 +1,27 @@
+plugins {
+    id 'com.android.library'
+}
+
+android {
+    namespace 'tv.danmaku.ijk.media.widget'
+    compileSdk 36
+    buildToolsVersion "36.1.0"
+
+    defaultConfig {
+        minSdk 21
+        targetSdk 36
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    implementation 'androidx.annotation:annotation:1.7.1'
+    implementation 'androidx.recyclerview:recyclerview:1.3.2'
+    api 'tv.danmaku.ijk.media:ijkplayer-java:0.8.4'
+    api 'tv.danmaku.ijk.media:ijkplayer-exo:0.8.4'
+    implementation project(':thunder')
+}

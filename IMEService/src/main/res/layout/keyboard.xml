@@ -1,0 +1,291 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="#F2F2F2"
+    android:paddingStart="4dp"
+    android:paddingEnd="4dp"
+    android:paddingTop="4dp"
+    android:paddingBottom="4dp"
+    android:focusable="true">
+
+    <!-- Candidates Bar -->
+    <FrameLayout
+        android:id="@+id/candidatesFrame"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="2dp"
+        android:visibility="gone"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <!-- QR Code Area -->
+    <LinearLayout
+        android:id="@+id/qrArea"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:background="#F2F2F2"
+        android:padding="6dp"
+        app:layout_constraintBottom_toBottomOf="@id/row4"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="@id/row1"
+        app:layout_constraintEnd_toStartOf="@id/row1"
+        app:layout_constraintWidth_percent="0.10"
+        app:layout_constraintHorizontal_bias="0.0">
+
+        <FrameLayout
+            android:id="@+id/qrThumbContainer"
+            android:layout_width="52dp"
+            android:layout_height="52dp"
+            android:clickable="true"
+            android:focusable="true"
+            android:background="@drawable/kb_key_normal"
+            android:padding="3dp">
+
+            <ImageView
+                android:id="@+id/ivQrThumb"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scaleType="fitCenter"
+                android:contentDescription="QR Code" />
+
+        </FrameLayout>
+
+        <TextView
+            android:id="@+id/tvQrLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="扫码远程"
+            android:textSize="8sp"
+            android:textColor="#5F6368"
+            android:gravity="center"
+            android:layout_marginTop="3dp" />
+
+    </LinearLayout>
+
+    <!-- ROW 1: 1 2 3  |  A B C D E F G  |  #  退格 -->
+    <LinearLayout
+        android:id="@+id/row1"
+        android:layout_width="0dp"
+        android:layout_height="@dimen/kb_key_height"
+        android:layout_marginStart="6dp"
+        android:orientation="horizontal"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@id/qrArea"
+        app:layout_constraintTop_toBottomOf="@id/candidatesFrame">
+
+        <Button style="@style/kb_key_normal" android:text="1" />
+        <Button style="@style/kb_key_normal" android:text="2" />
+        <Button style="@style/kb_key_normal" android:text="3" />
+        <Space android:layout_width="10dp" android:layout_height="1dp" />
+        <Button style="@style/kb_key_normal" android:text="A" />
+        <Button style="@style/kb_key_normal" android:text="B" />
+        <Button style="@style/kb_key_normal" android:text="C" />
+        <Button style="@style/kb_key_normal" android:text="D" />
+        <Button style="@style/kb_key_normal" android:text="E" />
+        <Button style="@style/kb_key_normal" android:text="F" />
+        <Button style="@style/kb_key_normal" android:text="G" />
+        <Space android:layout_width="4dp" android:layout_height="1dp" />
+        <Button style="@style/kb_key_normal" android:text="#" />
+        <Button
+            android:id="@+id/btnDelete"
+            style="@style/kb_key_normal"
+            android:text="⌫"
+            android:textSize="18sp" />
+
+    </LinearLayout>
+
+    <!-- ROW 2: 4 5 6  |  H I J K L M N  |  ?  符 -->
+    <LinearLayout
+        android:id="@+id/row2"
+        android:layout_width="0dp"
+        android:layout_height="@dimen/kb_key_height"
+        android:layout_marginStart="6dp"
+        android:orientation="horizontal"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@id/qrArea"
+        app:layout_constraintTop_toBottomOf="@id/row1">
+
+        <Button style="@style/kb_key_normal" android:text="4" />
+        <Button style="@style/kb_key_normal" android:text="5" />
+        <Button style="@style/kb_key_normal" android:text="6" />
+        <Space android:layout_width="10dp" android:layout_height="1dp" />
+        <Button style="@style/kb_key_normal" android:text="H" />
+        <Button style="@style/kb_key_normal" android:text="I" />
+        <Button style="@style/kb_key_normal" android:text="J" />
+        <Button style="@style/kb_key_normal" android:text="K" />
+        <Button style="@style/kb_key_normal" android:text="L" />
+        <Button style="@style/kb_key_normal" android:text="M" />
+        <Button style="@style/kb_key_normal" android:text="N" />
+        <Space android:layout_width="4dp" android:layout_height="1dp" />
+        <Button style="@style/kb_key_normal" android:text="?" />
+        <Button
+            android:id="@+id/btnToggleSymbol"
+            style="@style/kb_key_normal"
+            android:text="符" />
+
+    </LinearLayout>
+
+    <!-- ROW 3: 7 8 9  |  O P Q R S T U  |  空格  回车 -->
+    <LinearLayout
+        android:id="@+id/row3"
+        android:layout_width="0dp"
+        android:layout_height="@dimen/kb_key_height"
+        android:layout_marginStart="6dp"
+        android:orientation="horizontal"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@id/qrArea"
+        app:layout_constraintTop_toBottomOf="@id/row2">
+
+        <Button style="@style/kb_key_normal" android:text="7" />
+        <Button style="@style/kb_key_normal" android:text="8" />
+        <Button style="@style/kb_key_normal" android:text="9" />
+        <Space android:layout_width="10dp" android:layout_height="1dp" />
+        <Button style="@style/kb_key_normal" android:text="O" />
+        <Button style="@style/kb_key_normal" android:text="P" />
+        <Button style="@style/kb_key_normal" android:text="Q" />
+        <Button style="@style/kb_key_normal" android:text="R" />
+        <Button style="@style/kb_key_normal" android:text="S" />
+        <Button style="@style/kb_key_normal" android:text="T" />
+        <Button style="@style/kb_key_normal" android:text="U" />
+        <Space android:layout_width="4dp" android:layout_height="1dp" />
+        <Button
+            android:id="@+id/btnSpace"
+            style="@style/kb_key_normal"
+            android:text="␣"
+            android:textSize="22sp" />
+        <Button
+            android:id="@+id/btnEnter"
+            style="@style/kb_key_normal"
+            android:text="↵"
+            android:textSize="24sp" />
+
+    </LinearLayout>
+
+    <!-- ROW 4: / 0 .  |  V W X Y Z ← →  |  A/a  中/EN -->
+    <LinearLayout
+        android:id="@+id/row4"
+        android:layout_width="0dp"
+        android:layout_height="@dimen/kb_key_height"
+        android:layout_marginStart="6dp"
+        android:orientation="horizontal"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@id/qrArea"
+        app:layout_constraintTop_toBottomOf="@id/row3">
+
+        <Button style="@style/kb_key_normal" android:text="/" />
+        <Button style="@style/kb_key_normal" android:text="0" />
+        <Button style="@style/kb_key_normal" android:text="." />
+        <Space android:layout_width="10dp" android:layout_height="1dp" />
+        <Button style="@style/kb_key_normal" android:text="V" />
+        <Button style="@style/kb_key_normal" android:text="W" />
+        <Button style="@style/kb_key_normal" android:text="X" />
+        <Button style="@style/kb_key_normal" android:text="Y" />
+        <Button style="@style/kb_key_normal" android:text="Z" />
+        <Button
+            android:id="@+id/btnLeft"
+            style="@style/kb_key_normal"
+            android:text="←" />
+        <Button
+            android:id="@+id/btnRight"
+            style="@style/kb_key_normal"
+            android:text="→" />
+        <Space android:layout_width="4dp" android:layout_height="1dp" />
+        <Button
+            android:id="@+id/btnCaps"
+            style="@style/kb_key_normal"
+            android:text="Aa" />
+        <Button
+            android:id="@+id/btnToggleChinese"
+            style="@style/kb_key_normal"
+            android:text="中" />
+
+    </LinearLayout>
+
+    <!-- Help Dialog -->
+    <FrameLayout
+        android:id="@+id/helpDialog"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:visibility="gone"
+        android:background="@drawable/dialog_background"
+        android:elevation="8dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <ScrollView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:fillViewport="true">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <LinearLayout
+                android:id="@+id/titlelayout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@color/md_theme_primary"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:padding="16dp">
+
+                <TextView
+                    android:id="@+id/title"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="远程输入请扫描或直接访问以下地址"
+                    android:textColor="@color/md_theme_onPrimary"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@android:color/white"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:padding="24dp">
+
+                <ImageView
+                    android:id="@+id/ivQRCode"
+                    android:layout_width="@dimen/qrWH"
+                    android:layout_height="@dimen/qrWH"
+                    android:background="#F5F5F5"
+                    android:padding="8dp"
+                    android:contentDescription="QR Code" />
+
+                <TextView
+                    android:id="@+id/tvAddress"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:gravity="center"
+                    android:text=""
+                    android:visibility="gone"
+                    android:textColor="@color/md_theme_primary"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+        </ScrollView>
+
+    </FrameLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>
