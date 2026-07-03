@@ -34,10 +34,44 @@ public class RemoteServerFileManager implements NanoHTTPD.TempFileManager {
         return new File(RemoteServerFileManager.baseDir, "screenshot.png");
     }
     public static void resetBaseDir(Context context){
-        baseDir = context.getExternalFilesDir(null);
+        File publicDownloadDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), "boxremotekey");
+        File publicMediaDir = getPublicMediaBaseDir(context);
+        File privateBaseDir = context.getExternalFilesDir(null);
+        baseDir = getWritableBaseDir(publicDownloadDir, publicMediaDir, privateBaseDir);
         filesDir = new File(baseDir, "files");
         tmpDataDir = new File(baseDir, "temp");
         playerCacheDir = new File(baseDir, "xlplayer");
+    }
+
+    private static File getPublicMediaBaseDir(Context context) {
+        File[] mediaDirs = context.getExternalMediaDirs();
+        if (mediaDirs != null && mediaDirs.length > 0 && mediaDirs[0] != null) {
+            return new File(mediaDirs[0], "boxremotekey");
+        }
+        return null;
+    }
+
+    private static File getWritableBaseDir(File... candidates) {
+        for (File candidate : candidates) {
+            if (ensureWritableDir(candidate)) {
+                Log.i(IMEService.TAG, "上传文件目录: " + candidate.getAbsolutePath());
+                return candidate;
+            }
+        }
+        Log.w(IMEService.TAG, "上传目录不可写，使用默认目录: " + baseDir.getAbsolutePath());
+        return baseDir;
+    }
+
+    private static boolean ensureWritableDir(File dir) {
+        if (dir == null) return false;
+        try {
+            if (!dir.exists() && !dir.mkdirs()) return false;
+            File probe = File.createTempFile(".write-test-", ".tmp", dir);
+            return probe.delete();
+        } catch (Exception e) {
+            Log.w(IMEService.TAG, "目录不可写: " + dir.getAbsolutePath(), e);
+            return false;
+        }
     }
     public static class SDCardTempFile implements NanoHTTPD.TempFile {
         private final File file;
@@ -69,6 +103,8 @@ public class RemoteServerFileManager implements NanoHTTPD.TempFileManager {
         }
 
         public OutputStream open() throws Exception {
+            File parent = this.file.getParentFile();
+            if(parent != null && !parent.exists()) parent.mkdirs();
             if(this.fstream == null) this.fstream = new FileOutputStream(this.file);
             return this.fstream;
         }
@@ -117,7 +153,7 @@ public class RemoteServerFileManager implements NanoHTTPD.TempFileManager {
     public static void clearAllFiles(){
         try{
             if(filesDir.exists()) deleteDirFiles(filesDir);
-            if(tmpDataDir.exists()) deleteDirFiles(filesDir);
+            if(tmpDataDir.exists()) deleteDirFiles(tmpDataDir);
             if(playerCacheDir != null && playerCacheDir.exists()) deleteDirFiles(playerCacheDir);
             File torrentFile = getPlayTorrentFile();
             if(torrentFile.exists()) torrentFile.delete();
