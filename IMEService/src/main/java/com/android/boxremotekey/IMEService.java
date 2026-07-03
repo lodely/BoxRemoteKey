@@ -383,15 +383,11 @@ public class IMEService extends InputMethodService implements View.OnClickListen
 		if(keyCode == KeyEvent.KEYCODE_CAPS_LOCK) capsOn = !capsOn;
 
 		if (mChineseMode && mCandidatesView.isShown()) {
-			if (keyCode >= KeyEvent.KEYCODE_0 && keyCode <= KeyEvent.KEYCODE_9) {
+			if (keyCode >= KeyEvent.KEYCODE_1 && keyCode <= KeyEvent.KEYCODE_9) {
 				int num = keyCode - KeyEvent.KEYCODE_0;
-				if (num == 0) {
-					mPinyinEngine.nextPage();
-				} else {
-					int globalIdx = mPinyinEngine.selectCandidateByNumber(num);
-					if (globalIdx >= 0) {
-						commitAndReturnFocus(mPinyinEngine.getSelectedCandidate(globalIdx));
-					}
+				int globalIdx = mPinyinEngine.selectCandidateByNumber(num);
+				if (globalIdx >= 0) {
+					commitAndReturnFocus(mPinyinEngine.getSelectedCandidate(globalIdx));
 				}
 				return true;
 			}
@@ -415,6 +411,12 @@ public class IMEService extends InputMethodService implements View.OnClickListen
 			}
 		}
 
+		// 面板未显示时，字母/数字键一律放行给应用，避免输入法在面板隐藏后
+		// 仍吞键用于文字输入（修复蓝牙遥控字母/数字快捷键失效的隐患）。
+		if (mInputView == null || !mInputView.isShown()) {
+			return super.onKeyDown(keyCode, event);
+		}
+
 		if ((keyCode >= KeyEvent.KEYCODE_0 && keyCode <= KeyEvent.KEYCODE_9)) {
 			if(commitText(String.valueOf(keyCode - KeyEvent.KEYCODE_0))) return true;
 		} else if (keyCode >= KeyEvent.KEYCODE_A && keyCode <= KeyEvent.KEYCODE_Z) {
@@ -425,179 +427,163 @@ public class IMEService extends InputMethodService implements View.OnClickListen
 	}
 
 	private boolean handleKeyboardFocusEvent(int keyCode){
-		if(mInputView != null) {
-			switch (keyCode) {
-				case KeyEvent.KEYCODE_DPAD_UP:
-					// Prevent focus from escaping keyboard area
-					if (focusedView != null && focusedView.getId() == R.id.qrThumbContainer) {
+		// 面板未显示时，输入法不干预任何按键，全部放行给应用。
+		// 这彻底杜绝了“面板隐藏后蓝牙遥控方向键被吞导致失效”的问题。
+		if(mInputView == null || !mInputView.isShown()) {
+			return false;
+		}
+
+		switch (keyCode) {
+			case KeyEvent.KEYCODE_DPAD_UP:
+				// 中文候选栏可见时，焦点在候选栏内 → 候选词翻页导航
+				if (mCandidatesFrame != null && mCandidatesFrame.getVisibility() == View.VISIBLE
+						&& isInCandidateBar(focusedView)) {
+					return handleCandidateNavigation(keyCode);
+				}
+				// 中文候选栏可见、焦点在键盘第一行 → 进入候选栏第一个候选词
+				if (mCandidatesFrame != null && mCandidatesFrame.getVisibility() == View.VISIBLE) {
+					View firstCandidate = findFirstFocusableIn(mCandidatesFrame);
+					if (firstCandidate != null) {
+						focusedView = firstCandidate;
+						focusedView.requestFocus();
+						focusedView.requestFocusFromTouch();
 						return true;
 					}
-					if (mCandidatesFrame != null && mCandidatesFrame.getVisibility() == View.VISIBLE
-							&& focusedView != null) {
-						LinearLayout firstRow = findFirstKeyRow();
-						if (firstRow != null && focusedView.getParent() == firstRow) {
-							focusedView = findFirstFocusableIn(mCandidatesFrame);
-							if (focusedView != null) {
-								focusedView.requestFocus();
-								focusedView.requestFocusFromTouch();
-							}
-							return true;
-						}
-					}
-					if (isInCandidateBar(focusedView)) {
-						return true;
-					}
-					if(mInputView.isShown()) {
-						requestNextButtonFocus(keyCode);
-						return true;
-					}
-					break;
-				case KeyEvent.KEYCODE_DPAD_DOWN:
-					// If focus on QR, move to first key row
-					if (focusedView != null && focusedView.getId() == R.id.qrThumbContainer) {
-						LinearLayout firstRow = findFirstKeyRow();
-						if (firstRow != null) {
-							focusedView = findFocusableChildAt(firstRow, 0, true);
-							if (focusedView != null) {
-								focusedView.requestFocus();
-								focusedView.requestFocusFromTouch();
-							}
-						}
-						return true;
-					}
-					if (isInCandidateBar(focusedView)) {
-						LinearLayout firstRow = findFirstKeyRow();
-						if (firstRow != null && firstRow.getChildCount() > 0) {
-							focusedView = firstRow.getChildAt(0);
+				}
+				// 否则走键盘按键的环形导航
+				requestNextButtonFocus(keyCode);
+				return true;
+			case KeyEvent.KEYCODE_DPAD_DOWN:
+				// 候选栏可见、焦点在候选栏内 → 回到键盘第一行
+				if (mCandidatesFrame != null && mCandidatesFrame.getVisibility() == View.VISIBLE
+						&& isInCandidateBar(focusedView)) {
+					LinearLayout firstRow = findFirstKeyRow();
+					if (firstRow != null) {
+						focusedView = findFocusableChildAt(firstRow, 0, true);
+						if (focusedView != null) {
 							focusedView.requestFocus();
 							focusedView.requestFocusFromTouch();
 						}
-						return true;
 					}
-					if(mInputView.isShown()) {
-						requestNextButtonFocus(keyCode);
-						return true;
-					}
-					break;
-				case KeyEvent.KEYCODE_DPAD_LEFT:
-					if (isInCandidateBar(focusedView)) {
-						ViewGroup parent = (ViewGroup) focusedView.getParent();
-						int idx = parent.indexOfChild(focusedView);
-						if (idx > 0) {
-							focusedView = parent.getChildAt(idx - 1);
-							focusedView.requestFocus();
-							focusedView.requestFocusFromTouch();
-						} else {
-							mPinyinEngine.prevPage();
-							mCandidatesFrame.post(new Runnable() {
-								public void run() {
-									View first = findFirstFocusableIn(mCandidatesFrame);
-									if (first != null) {
-										focusedView = first;
-										first.requestFocus();
-										first.requestFocusFromTouch();
-									}
-								}
-							});
-						}
-						return true;
-					}
-					// If on first key of any row and QR is focusable, focus QR
-					if (focusedView != null && focusedView.getParent() instanceof LinearLayout) {
-						LinearLayout row = (LinearLayout) focusedView.getParent();
-						int rowIdx = mInputView.indexOfChild(row);
-						if (rowIdx >= 0 && row.getId() != R.id.helpDialog
-								&& row.getId() != R.id.qrArea && row.getId() != R.id.candidatesFrame) {
-							int prevIdx = findPrevFocusableIndex(row, row.indexOfChild(focusedView));
-							if (prevIdx < 0) {
-								View qr = mInputView.findViewById(R.id.qrThumbContainer);
-								if (qr != null && qr.isFocusable() && qr.getVisibility() == View.VISIBLE) {
-									focusedView = qr;
-									focusedView.requestFocus();
-									focusedView.requestFocusFromTouch();
-									return true;
-								}
-							}
-						}
-					}
-					if(mInputView.isShown()) {
-						requestNextButtonFocus(keyCode);
-						return true;
-					}
-					break;
-				case KeyEvent.KEYCODE_DPAD_RIGHT:
-					if (isInCandidateBar(focusedView)) {
-						ViewGroup parent = (ViewGroup) focusedView.getParent();
-						int idx = parent.indexOfChild(focusedView);
-						if (idx < parent.getChildCount() - 1) {
-							focusedView = parent.getChildAt(idx + 1);
-							focusedView.requestFocus();
-							focusedView.requestFocusFromTouch();
-						} else {
-							mPinyinEngine.nextPage();
-							mCandidatesFrame.post(new Runnable() {
-								public void run() {
-									View first = findFirstFocusableIn(mCandidatesFrame);
-									if (first != null) {
-										focusedView = first;
-										first.requestFocus();
-										first.requestFocusFromTouch();
-									}
-								}
-							});
-						}
-						return true;
-					}
-					// If focus is on QR thumbnail, move to first key of first row
-					if (focusedView != null && focusedView.getId() == R.id.qrThumbContainer) {
-						LinearLayout firstRow = findFirstKeyRow();
-						if (firstRow != null) {
-							focusedView = findFocusableChildAt(firstRow, 0, true);
-							if (focusedView != null) {
-								focusedView.requestFocus();
-								focusedView.requestFocusFromTouch();
-							}
-						}
-						return true;
-					}
-					if(mInputView.isShown()) {
-						requestNextButtonFocus(keyCode);
-						return true;
-					}
-					break;
-				case KeyEvent.KEYCODE_ENTER:
-				case KeyEvent.KEYCODE_DPAD_CENTER:
-					if (isInCandidateBar(focusedView) && focusedView != null) {
-						focusedView.performClick();
-						return true;
-					}
-					// QR thumbnail click
-					if (focusedView != null && focusedView.getId() == R.id.qrThumbContainer) {
-						focusedView.performClick();
-						return true;
-					}
-					if (mInputView.isShown() && focusedView != null) {
-						clickButtonByKey(focusedView);
-						return true;
-					}
-					break;
-				case KeyEvent.KEYCODE_CAPS_LOCK:
-					toggleCapsState(true);
 					return true;
-				case KeyEvent.KEYCODE_ESCAPE:
-				case KeyEvent.KEYCODE_BACK:
-					if (mInputView.isShown()){
-						if(helpDialog != null && helpDialog.isShown()){
-							helpDialog.setVisibility(View.GONE);
-						}else {
-							this.finishInput();
-						}
-						return true;
-					}
-					break;
-			}
+				}
+				requestNextButtonFocus(keyCode);
+				return true;
+			case KeyEvent.KEYCODE_DPAD_LEFT:
+			case KeyEvent.KEYCODE_DPAD_RIGHT:
+				// 中文候选栏可见且焦点在候选栏内时，走候选词导航（左右选词、边界翻页）
+				if (mCandidatesFrame != null && mCandidatesFrame.getVisibility() == View.VISIBLE
+						&& isInCandidateBar(focusedView)) {
+					return handleCandidateNavigation(keyCode);
+				}
+				// 否则统一走键盘按键的环形导航（焦点永远落在有效按键上，不会卡死）
+				requestNextButtonFocus(keyCode);
+				return true;
+			case KeyEvent.KEYCODE_ENTER:
+			case KeyEvent.KEYCODE_DPAD_CENTER:
+				// 焦点在候选栏时，确认选中当前候选词
+				if (isInCandidateBar(focusedView) && focusedView != null) {
+					focusedView.performClick();
+					return true;
+				}
+				// 焦点在 QR 缩略图时，点击放大二维码
+				if (focusedView != null && focusedView.getId() == R.id.qrThumbContainer) {
+					focusedView.performClick();
+					return true;
+				}
+				if (focusedView != null) {
+					clickButtonByKey(focusedView);
+					return true;
+				}
+				break;
+			case KeyEvent.KEYCODE_CAPS_LOCK:
+				toggleCapsState(true);
+				return true;
+			case KeyEvent.KEYCODE_ESCAPE:
+			case KeyEvent.KEYCODE_BACK:
+				if(helpDialog != null && helpDialog.isShown()){
+					helpDialog.setVisibility(View.GONE);
+				}else {
+					this.finishInput();
+				}
+				return true;
 		}
 		return false;
+	}
+
+	/**
+	 * 候选栏内的方向键导航：左右移动选中候选词、到边界翻页。
+	 * 上下键不在此处理（上键无反馈；下键在上层已转为“回到键盘”）。
+	 */
+	private boolean handleCandidateNavigation(int keyCode){
+		if (focusedView == null) return false;
+		ViewGroup parent = (ViewGroup) focusedView.getParent();
+		switch (keyCode) {
+			case KeyEvent.KEYCODE_DPAD_LEFT: {
+				View prev = findPrevFocusableView(parent, focusedView);
+				if (prev != null) {
+					focusCandidate(prev);
+				} else {
+					mPinyinEngine.prevPage();
+					mCandidatesFrame.postDelayed(this::focusFirstCandidate, 80);
+				}
+				break;
+			}
+			case KeyEvent.KEYCODE_DPAD_RIGHT: {
+				View next = findNextFocusableView(parent, focusedView);
+				if (next != null) {
+					focusCandidate(next);
+				} else {
+					mPinyinEngine.nextPage();
+					mCandidatesFrame.postDelayed(this::focusFirstCandidate, 80);
+				}
+				break;
+			}
+			// 上键：不做任何反馈（用户要求）
+			case KeyEvent.KEYCODE_DPAD_UP:
+			default:
+				break;
+		}
+		return true;
+	}
+
+	/** 在候选栏容器中，找到 current 之前最近的可聚焦候选词（跳过页码等不可聚焦项） */
+	private View findPrevFocusableView(ViewGroup parent, View current) {
+		int idx = parent.indexOfChild(current);
+		for (int i = idx - 1; i >= 0; i--) {
+			View c = parent.getChildAt(i);
+			if (c.isFocusable() && c.getVisibility() == View.VISIBLE) return c;
+		}
+		return null;
+	}
+
+	/** 在候选栏容器中，找到 current 之后最近的可聚焦候选词（跳过页码等不可聚焦项） */
+	private View findNextFocusableView(ViewGroup parent, View current) {
+		int idx = parent.indexOfChild(current);
+		for (int i = idx + 1; i < parent.getChildCount(); i++) {
+			View c = parent.getChildAt(i);
+			if (c.isFocusable() && c.getVisibility() == View.VISIBLE) return c;
+		}
+		return null;
+	}
+
+	/** 聚焦指定候选词 View */
+	private void focusCandidate(View v) {
+		if (v != null) {
+			focusedView = v;
+			v.requestFocus();
+			v.requestFocusFromTouch();
+		}
+	}
+
+	/** 翻页后聚焦候选栏第一个可选候选词 */
+	private void focusFirstCandidate() {
+		View first = findFirstFocusableIn(mCandidatesFrame);
+		if (first != null) {
+			focusedView = first;
+			first.requestFocus();
+			first.requestFocusFromTouch();
+		}
 	}
 
 	private LinearLayout findFirstKeyRow() {
@@ -611,6 +597,20 @@ public class IMEService extends InputMethodService implements View.OnClickListen
 			}
 		}
 		return null;
+	}
+
+	private LinearLayout findLastKeyRow() {
+		LinearLayout last = null;
+		for (int i = 0; i < mInputView.getChildCount(); i++) {
+			View child = mInputView.getChildAt(i);
+			if (child instanceof LinearLayout && child.getVisibility() == View.VISIBLE
+				&& child.getId() != R.id.helpDialog
+				&& child.getId() != R.id.qrArea
+				&& child.getId() != R.id.candidatesFrame) {
+				last = (LinearLayout) child;
+			}
+		}
+		return last;
 	}
 
 	private boolean isInCandidateBar(View v) {
@@ -680,6 +680,38 @@ public class IMEService extends InputMethodService implements View.OnClickListen
 	}
 
 	private void requestNextButtonFocus(int keyCode){
+		View qrThumb = mInputView.findViewById(R.id.qrThumbContainer);
+
+		// 当前焦点在 QR 缩略图上
+		if (qrThumb != null && qrThumb.getVisibility() == View.VISIBLE && focusedView == qrThumb) {
+			switch (keyCode) {
+				case KeyEvent.KEYCODE_DPAD_RIGHT:
+				case KeyEvent.KEYCODE_DPAD_DOWN:
+					// 从 QR 回到键盘：跳到第一行第一个按键
+					LinearLayout firstRow = findFirstKeyRow();
+					if (firstRow != null) {
+						focusedView = findFocusableChildAt(firstRow, 0, true);
+					}
+					break;
+				case KeyEvent.KEYCODE_DPAD_LEFT:
+					// QR 在最左，继续向左则环形跳到键盘最后一行的最后一个按键
+					LinearLayout lastRow = findLastKeyRow();
+					if (lastRow != null) {
+						focusedView = findFocusableChildAt(lastRow, lastRow.getChildCount() - 1, false);
+					}
+					break;
+				case KeyEvent.KEYCODE_DPAD_UP:
+				default:
+					// QR 纵向只有一格：上停在原地
+					break;
+			}
+			if (focusedView != null) {
+				focusedView.requestFocus();
+				focusedView.requestFocusFromTouch();
+			}
+			return;
+		}
+
 		if(focusedView == null){
 			LinearLayout firstRow = findFirstKeyRow();
 			if (firstRow != null && firstRow.getChildCount() > 0) {
@@ -699,6 +731,15 @@ public class IMEService extends InputMethodService implements View.OnClickListen
 			int rootInde = mInputView.indexOfChild(container);
 			if (rootInde < 0) return;
 			int index = container.indexOfChild(focusedView);
+			// 键盘第一个按键按左，且 QR 可见 → 跳到 QR 缩略图
+			if (keyCode == KeyEvent.KEYCODE_DPAD_LEFT
+					&& qrThumb != null && qrThumb.getVisibility() == View.VISIBLE
+					&& findPrevFocusableIndex(container, index) < 0) {
+				focusedView = qrThumb;
+				focusedView.requestFocus();
+				focusedView.requestFocusFromTouch();
+				return;
+			}
 			switch (keyCode) {
 				case KeyEvent.KEYCODE_DPAD_UP: {
 					int prevIdx = findPrevKeyRowIndex(rootInde);

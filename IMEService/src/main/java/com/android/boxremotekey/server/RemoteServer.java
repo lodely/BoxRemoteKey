@@ -42,7 +42,7 @@ public class RemoteServer extends NanoHTTPD
         void onTextReceived(String text);
     }
 
-    public static int serverPort = 9978;
+    public static int serverPort = 9930;
     private boolean isStarted = false;
     private DataReceiver mDataReceiver = null;
     private Context mContext = null;

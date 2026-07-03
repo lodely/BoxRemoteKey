@@ -138,28 +138,22 @@ public class CandidatesView {
         }
 
         if (totalPages > 1) {
-            Button pageBtn = new Button(context, null, android.R.attr.buttonBarButtonStyle);
-            pageBtn.setText((page + 1) + "/" + totalPages + " ▶");
-            pageBtn.setTextSize(12);
-            pageBtn.setTextColor(0xFF0061A4);
-            pageBtn.setBackgroundResource(com.android.boxremotekey.R.drawable.kb_key_alt);
-            pageBtn.setMinWidth(dpToPx(context, 36));
-            pageBtn.setMinimumWidth(dpToPx(context, 36));
-            pageBtn.setPadding(dpToPx(context, 4), dpToPx(context, 4),
-                    dpToPx(context, 4), dpToPx(context, 4));
-            pageBtn.setAllCaps(false);
-            pageBtn.setFocusable(true);
-            pageBtn.setFocusableInTouchMode(true);
-            pageBtn.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    if (mPageFlipListener != null) {
-                        mPageFlipListener.onPageFlip();
-                    }
-                }
-            });
-
-            mButtonContainer.addView(pageBtn);
+            // 页码标识：纯展示，不可聚焦、不可选中（翻页由候选词到边界后按右触发）
+            TextView pageIndicator = new TextView(context);
+            pageIndicator.setText((page + 1) + "/" + totalPages);
+            pageIndicator.setTextSize(12);
+            pageIndicator.setTextColor(0xFF0061A4);
+            pageIndicator.setGravity(Gravity.CENTER);
+            pageIndicator.setPadding(dpToPx(context, 6), dpToPx(context, 4),
+                    dpToPx(context, 6), dpToPx(context, 4));
+            pageIndicator.setFocusable(false);
+            pageIndicator.setFocusableInTouchMode(false);
+            LinearLayout.LayoutParams pageLp = new LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            pageLp.gravity = Gravity.CENTER_VERTICAL;
+            pageLp.setMargins(dpToPx(context, 4), 0, dpToPx(context, 4), 0);
+            pageIndicator.setLayoutParams(pageLp);
+            mButtonContainer.addView(pageIndicator);
         }
     }
 

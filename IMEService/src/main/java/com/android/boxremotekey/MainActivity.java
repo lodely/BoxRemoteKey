@@ -41,6 +41,11 @@ public class MainActivity extends Activity implements View.OnClickListener {
         accessibilityButton = this.findViewById(R.id.btnAccessibility);
 
         this.setTitle(this.getResources().getString( R.string.app_name) + "  V" + AppPackagesHelper.getCurrentPackageVersion(this));
+        // 在主界面 App 名旁标注版本号
+        TextView tvVersion = this.findViewById(R.id.tvVersion);
+        if (tvVersion != null) {
+            tvVersion.setText("v" + AppPackagesHelper.getCurrentPackageVersion(this));
+        }
         dlnaNameText.setText(DLNAUtils.getDLNANameSuffix(this.getApplicationContext()));
 
         // 设置按钮点击监听器
