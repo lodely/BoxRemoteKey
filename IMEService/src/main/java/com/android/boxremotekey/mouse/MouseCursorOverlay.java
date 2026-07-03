@@ -129,4 +129,8 @@ public class MouseCursorOverlay {
     public boolean isShowing() {
         return isShowing;
     }
+
+    public boolean isCursorVisible() {
+        return isShowing;
+    }
 }

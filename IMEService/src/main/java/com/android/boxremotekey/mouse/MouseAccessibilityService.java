@@ -20,6 +20,8 @@ import com.android.boxremotekey.adb.AdbHelper;
  */
 public class MouseAccessibilityService extends AccessibilityService {
     private static final String TAG = "MouseAccessibility";
+    private static final long CLICK_STROKE_DURATION = 80;
+    private static final long GESTURE_OVERLAY_RESTORE_DELAY = 120;
 
     private static MouseAccessibilityService instance;
     private MouseCursorOverlay cursorOverlay;
@@ -250,11 +252,12 @@ Log.i(TAG, "Screen size: " + screenWidth + "x" + screenHeight);
             return performClickViaShell(x, y);
         }
 
+        final boolean restoreCursor = hideCursorForGesture();
         Path clickPath = new Path();
         clickPath.moveTo(x, y);
 
         GestureDescription.StrokeDescription stroke =
-            new GestureDescription.StrokeDescription(clickPath, 0, 50);
+            new GestureDescription.StrokeDescription(clickPath, 0, CLICK_STROKE_DURATION);
 
         GestureDescription gesture = new GestureDescription.Builder()
             .addStroke(stroke)
@@ -263,19 +266,50 @@ Log.i(TAG, "Screen size: " + screenWidth + "x" + screenHeight);
         final int clickX = x;
         final int clickY = y;
 
-        return dispatchGesture(gesture, new GestureResultCallback() {
-            @Override
-            public void onCompleted(GestureDescription gestureDescription) {
-                Log.d(TAG, "Click completed at " + clickX + "," + clickY);
-            }
+        mainHandler.post(() -> {
+            boolean accepted = dispatchGesture(gesture, new GestureResultCallback() {
+                @Override
+                public void onCompleted(GestureDescription gestureDescription) {
+                    Log.d(TAG, "Click completed at " + clickX + "," + clickY);
+                    restoreCursorAfterGesture(restoreCursor);
+                }
 
-            @Override
-            public void onCancelled(GestureDescription gestureDescription) {
-                Log.w(TAG, "Click cancelled at " + clickX + "," + clickY + ", trying shell fallback");
-                // 手势被取消时，尝试使用shell命令
+                @Override
+                public void onCancelled(GestureDescription gestureDescription) {
+                    Log.w(TAG, "Click cancelled at " + clickX + "," + clickY + ", trying shell fallback");
+                    restoreCursorAfterGesture(restoreCursor);
+                    performClickViaShell(clickX, clickY);
+                }
+            }, mainHandler);
+            if (!accepted) {
+                Log.w(TAG, "Click gesture was not accepted, trying shell fallback");
+                restoreCursorAfterGesture(restoreCursor);
                 performClickViaShell(clickX, clickY);
             }
-        }, null);
+        });
+        return true;
+    }
+
+    private boolean hideCursorForGesture() {
+        if (cursorOverlay == null || !cursorOverlay.isCursorVisible()) {
+            return false;
+        }
+        mainHandler.post(() -> {
+            if (cursorOverlay != null && cursorOverlay.isCursorVisible()) {
+                cursorOverlay.hide();
+            }
+        });
+        return true;
+    }
+
+    private void restoreCursorAfterGesture(boolean restoreCursor) {
+        if (!restoreCursor) return;
+        mainHandler.postDelayed(() -> {
+            if (cursorOverlay != null) {
+                cursorOverlay.show();
+                cursorOverlay.updatePosition(mouseX, mouseY);
+            }
+        }, GESTURE_OVERLAY_RESTORE_DELAY);
     }
 
     /**
