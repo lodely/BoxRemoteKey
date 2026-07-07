@@ -441,7 +441,8 @@ public class IMEService extends InputMethodService implements View.OnClickListen
 					return handleCandidateNavigation(keyCode);
 				}
 				// 中文候选栏可见、焦点在键盘第一行 → 进入候选栏第一个候选词
-				if (mCandidatesFrame != null && mCandidatesFrame.getVisibility() == View.VISIBLE) {
+				if (mCandidatesFrame != null && mCandidatesFrame.getVisibility() == View.VISIBLE
+						&& isInFirstKeyRow(focusedView)) {
 					View firstCandidate = findFirstFocusableIn(mCandidatesFrame);
 					if (firstCandidate != null) {
 						focusedView = firstCandidate;
@@ -565,6 +566,15 @@ public class IMEService extends InputMethodService implements View.OnClickListen
 			if (c.isFocusable() && c.getVisibility() == View.VISIBLE) return c;
 		}
 		return null;
+	}
+
+	/** 判断当前焦点是否在键盘第一行（用于决定按上键是否进入候选词栏） */
+	private boolean isInFirstKeyRow(View v) {
+		if (v == null) return false;
+		ViewParent parent = v.getParent();
+		if (!(parent instanceof LinearLayout)) return false;
+		LinearLayout firstRow = findFirstKeyRow();
+		return parent == firstRow;
 	}
 
 	/** 聚焦指定候选词 View */
